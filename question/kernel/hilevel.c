@@ -312,6 +312,12 @@ void hilevel_handler_irq(ctx_t* ctx) {
   else if     ( id == GIC_SOURCE_PS20 ) {
     uint8_t x = PL050_getc( PS20 );
 
+    /*PL011_putc( UART0, '0',                    true );
+    PL011_putc( UART0, '<',                      true );
+    PL011_putc( UART0, itox( ( x >> 4 ) & 0xF ), true );
+    PL011_putc( UART0, itox( ( x >> 0 ) & 0xF ), true );
+    PL011_putc( UART0, '>',                      true );
+    */
     if ((x >> 7) == 0 ) {
       PL011_putc( UART0, lookup[x], true ); //Shows what is pressed on the keyboard
       int asc = ctoasc(lookup[x]);
@@ -325,8 +331,72 @@ void hilevel_handler_irq(ctx_t* ctx) {
         // print(" is released \n");
         resetImage();
     }
-
   }
+
+  //MOUSE INTERRUPT
+  else if( id == GIC_SOURCE_PS21 ) {
+
+    clearCursor();
+    uint16_t byte1;
+    uint16_t byte2;
+    uint16_t byte3;
+
+    uint8_t x = PL050_getc( PS21 );
+/*
+    PL011_putc( UART0, '1',                      true );
+    PL011_putc( UART0, '<',                      true );
+    PL011_putc( UART0, itox( ( x >> 4 ) & 0xF ), true );
+    PL011_putc( UART0, itox( ( x >> 0 ) & 0xF ), true );
+    PL011_putc( UART0, '>',                      true );
+    */
+    switch (nbytes) {
+
+     case 0 : {
+       uint16_t byte1      = ( uint16_t )( x );
+       if( ( (byte1 >> 0) & 0x1) != 0){
+         // print("Left button is pressed \n");
+         clearCursor();
+         clickCursor(cursorX, cursorY);
+       }
+    // uint16_t y_sign_bit = (byte1 >> 5) & 0x1;
+    // uint16_t x_sign_bit = (byte1 >> 4) & 0x1;
+       nbytes              = (nbytes + 1) % 3;
+
+       break;
+      }
+
+     case 1 : {
+       uint16_t byte2      = ( uint16_t )( x );
+       int16_t x_movement  = byte2 - ((byte1 << 4) & 0x100);
+       x_movement          = x_movement/16;
+       // print("x must move: "); print_int(x_movement); print("\n");
+       if((cursorX + x_movement) <= 0) cursorX = 0;
+       else if(cursorX >=800) cursorX = 800;
+       else cursorX       = (cursorX - x_movement );
+       nbytes              = (nbytes + 1) % 3;
+
+       break;
+      }
+
+     case 2 : {
+       uint16_t byte3      = ( uint16_t )( x );
+       int16_t y_movement  = byte3 - ((byte1 << 3) & 0x100);
+       y_movement          = y_movement/16;
+       // print("y must move: "); print_int(y_movement); print("\n");
+
+       if((cursorY - y_movement) <= 0) cursorY = 0;
+       else if(cursorY >=600) cursorY = 600;
+       else cursorY       = (cursorY + y_movement );
+       mouseCursor( cursorX, cursorY );
+       // print("X = "); print_int(cursorX); print(" and ");
+       // print("Y = "); print_int(cursorY); print("\n");
+
+       nbytes              = (nbytes + 1) % 3;
+       break;
+      }
+    }
+
+}
 
   // Step 5: write the interrupt identifier to signal we're done.
 
