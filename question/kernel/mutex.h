@@ -1,0 +1,8 @@
+#define MUTX_LOCKED (0)
+#define MUTX_UNLOCKED (1)
+#define MUTX_WRITE_OK (2)
+#define MUTX_RELEASE_OK (3)
+#define MUTX_RELEASE_FAIL (4)
+#define MUTX_READ_FAIL (-1)
+#define MUTX_WRITE_FAIL (5)
+#define MUTX_ERROR (-9)
