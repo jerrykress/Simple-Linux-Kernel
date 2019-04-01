@@ -226,6 +226,8 @@ void hilevel_handler_rst(ctx_t *ctx)
   typeX = 50;
   typeY = 50;
 
+  printNick();
+
   dispatch(ctx, NULL, &pcb[0]);
   return;
 }
@@ -343,6 +345,22 @@ void clearCursor()
   }
 }
 
+void enterNewLine(){
+  typeY = typeY + 24;
+  typeX = 50;
+}
+
+void backspace(){
+  for (int i = 0; i < 16; i++)
+  {
+    for (int j = 0; j < 16; j++)
+    {
+      fb[typeY + i][typeX + j] = 0;
+    }
+  }
+  typeX = typeX - 24;
+}
+
 //Just a function to clear bits
 uint8_t clear_bit(uint8_t x, int bit)
 {
@@ -359,13 +377,13 @@ void hilevel_handler_irq(ctx_t *ctx)
 
   // Step 4: handle the interrupt, then clear (or reset) the source.
 
-  if (id == GIC_SOURCE_TIMER0)
+  if (id == GIC_SOURCE_TIMER0) //TIMER
   {
     schedule(ctx);
     TIMER0->Timer1IntClr = 0x01;
   }
 
-  else if (id == GIC_SOURCE_PS20)
+  else if (id == GIC_SOURCE_PS20) // KEYBOARD
   {
     uint8_t x = PL050_getc(PS20);
 
@@ -373,11 +391,7 @@ void hilevel_handler_irq(ctx_t *ctx)
     {
       PL011_putc(UART0, lookup[x], true); //Shows what is pressed on the keyboard
       int asc = ctoasc(lookup[x]);
-      if (asc == 10)
-      {
-        typeY = typeY + 24;
-        typeX = 50;
-      }
+      if (asc == 10) enterNewLine();
       // print(" is pressed \n");
       printpixels(asc, typeX, typeY);
       typeX = typeX + 16;
