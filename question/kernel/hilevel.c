@@ -226,8 +226,6 @@ void hilevel_handler_rst(ctx_t *ctx)
   typeX = 50;
   typeY = 50;
 
-  printNick();
-
   dispatch(ctx, NULL, &pcb[0]);
   return;
 }
@@ -286,7 +284,7 @@ int ctoasc(char c)
 void printpixels(int asc, int x, int y)
 {
   int val;
-  for (int i = 16; i >= 0; i--)
+  for (int i = 16; i > 0; i--)
   {
     int pix = ascii[asc][i];
     for (int j = 0; j < 16; j++)
@@ -351,14 +349,37 @@ void enterNewLine(){
 }
 
 void backspace(){
-  for (int i = 0; i < 16; i++)
+  typeX = typeX - 16;
+  for (int i = 0; i <= 16; i++)
   {
-    for (int j = 0; j < 16; j++)
+    for (int j = 0; j <= 16; j++)
     {
       fb[typeY + i][typeX + j] = 0;
     }
   }
-  typeX = typeX - 24;
+}
+
+void createTaskButton(){
+  int taskBarX = 8;
+  int taskBarY = 575;
+
+  for(int i = 0; i < 30; i++){
+    if(pcb[i].status == STATUS_EXECUTING || pcb[i].status == STATUS_READY){
+      printpixels(ctoasc('0'+pcb[i].pid), taskBarX, taskBarY);
+      taskBarX = taskBarX + 32;
+    }
+  }
+}
+
+void refreshTaskBar(){
+  for (int i = 567; i < 600; i++)
+  {
+    for(int j = 0; j < 800; j++)
+    {
+      fb[i][j] = 0x7FFF;
+    }
+  }
+  createTaskButton();
 }
 
 //Just a function to clear bits
@@ -380,6 +401,7 @@ void hilevel_handler_irq(ctx_t *ctx)
   if (id == GIC_SOURCE_TIMER0) //TIMER
   {
     schedule(ctx);
+    refreshTaskBar();
     TIMER0->Timer1IntClr = 0x01;
   }
 
@@ -392,9 +414,12 @@ void hilevel_handler_irq(ctx_t *ctx)
       PL011_putc(UART0, lookup[x], true); //Shows what is pressed on the keyboard
       int asc = ctoasc(lookup[x]);
       if (asc == 10) enterNewLine();
-      // print(" is pressed \n");
-      printpixels(asc, typeX, typeY);
-      typeX = typeX + 16;
+      else if (asc == 8)  backspace();
+      else{
+        printpixels(asc, typeX, typeY);
+        typeX = typeX + 16;
+      }
+
     }
 
     else
