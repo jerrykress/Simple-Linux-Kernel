@@ -52,6 +52,27 @@ void itoa( char* r, int x ) {
   return;
 }
 
+void print(char* message){
+
+  while(*message != '\0'){
+    write(STDOUT_FILENO, message, 1);
+    message++;
+  }
+  return;
+}
+
+void print_int(int n){
+  if (n<0) {print("-");
+  n = -n;
+  }
+  if ( n >= 10) {
+		print_int(n / 10);
+	}
+	char i = 0x30 + n % 10;
+	write(0, &i, 1);
+	return;
+  }
+
 void yield() {
   asm volatile( "svc %0     \n" // make system call SYS_YIELD
               :

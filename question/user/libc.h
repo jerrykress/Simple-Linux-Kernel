@@ -80,4 +80,8 @@ extern int mutx(int n, int mode, int data);
 // for child processes to request their actual pids in pcb
 extern int pidd();
 
+extern void print(char *message);
+
+extern void print_int(int n);
+
 #endif

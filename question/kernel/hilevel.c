@@ -11,6 +11,7 @@
 #include <sys/types.h>
 #include "MMU.h"
 
+
 extern uint32_t end;
 int pid_n = 30;
 
@@ -21,6 +22,10 @@ extern void main_P3();
 extern void main_P4();
 extern void main_P5();
 extern void main_PX();
+extern void print();
+extern void print(char *message);
+
+extern void print_int(int n);
 
 pcb_t pcb[30];
 char executing = '0';
@@ -31,7 +36,8 @@ uint16_t fb[ 600 ][ 800 ];
 int nbytes;
 uint16_t cursorX; //Cursor xcoordinates
 uint16_t cursorY; //Cursor ycoordinates
-
+uint16_t typeX;
+uint16_t typeY;
 
 
 caddr_t _sbrk(int incr) {
@@ -103,6 +109,16 @@ void dispatch(ctx_t *ctx, pcb_t *prev, pcb_t *next) {
 
 uint32_t get_memloc(int pid){
   return (uint32_t)(&tos_console + (pid -1 )*(0x00001000));
+}
+
+/* resetImage() function: is used to set all the pixels of the LCD to black.
+*/
+void resetImage(){
+  for( int i = 0; i < 600; i++ ){
+    for( int j = 0; j < 800; j++ ){
+      fb[ i ][ j ] = 0;
+    }
+  }
 }
 
 void hilevel_handler_rst(ctx_t *ctx) {
@@ -183,6 +199,13 @@ void hilevel_handler_rst(ctx_t *ctx) {
 
   int_enable_irq();
 
+  resetImage();
+  nbytes = 0; 
+  cursorX = 100;
+  cursorY = 400; 
+  typeX = 50;
+  typeY = 50;
+
   dispatch(ctx, NULL, &pcb[0]);
   return;
 }
@@ -230,7 +253,7 @@ int ctoasc( char c){
 * a lookupTable first to find the corresponding character that came from the
 * keyboard interrupt, and then another table to find the letter's format.
 */
-void printpixels( int asc, int x, int y ){
+void printpixels(int asc, int x, int y){
   int val;
   for( int i = 16; i >= 0; i-- ){
     int pix = ascii[ asc ][ i ];
@@ -243,21 +266,10 @@ void printpixels( int asc, int x, int y ){
 }
 
 
-/* resetImage() function: is used to set all the pixels of the LCD to black.
-*/
-void resetImage( ){
-  for( int i = 0; i < 600; i++ ){
-    for( int j = 0; j < 800; j++ ){
-      fb[ i ][ j ] = 0;
-    }
-  }
-}
-
-
-/* mouseCursor function: sets all the pixels that are needed to create a cursor
+/* setCursor function: sets all the pixels that are needed to create a cursor
 * image on the screen.
 */
-void mouseCursor( int x, int y ){
+void setCursor( int x, int y ){
 for( int i = 0; i < 16; i++ ){
   for( int j = 0; j < 16; j++ ){
     int val = ( cursor[ i ] >> j ) & 0x1;
@@ -309,27 +321,22 @@ void hilevel_handler_irq(ctx_t* ctx) {
     TIMER0->Timer1IntClr = 0x01;
   }
 
-  else if     ( id == GIC_SOURCE_PS20 ) {
+  else if( id == GIC_SOURCE_PS20 ) {
     uint8_t x = PL050_getc( PS20 );
 
-    /*PL011_putc( UART0, '0',                    true );
-    PL011_putc( UART0, '<',                      true );
-    PL011_putc( UART0, itox( ( x >> 4 ) & 0xF ), true );
-    PL011_putc( UART0, itox( ( x >> 0 ) & 0xF ), true );
-    PL011_putc( UART0, '>',                      true );
-    */
     if ((x >> 7) == 0 ) {
       PL011_putc( UART0, lookup[x], true ); //Shows what is pressed on the keyboard
       int asc = ctoasc(lookup[x]);
       // print(" is pressed \n");
-      printpixels(asc, 50, 50);
+      printpixels(asc, typeX, typeY);
+      typeX = typeX + 16;
     }
 
-      else {
-        uint8_t newx = clear_bit(x, 7);
-        PL011_putc(UART0, lookup[newx] ,true);
-        // print(" is released \n");
-        resetImage();
+    else {
+      uint8_t newx = clear_bit(x, 7);
+      PL011_putc(UART0, lookup[newx] ,true);
+      // print(" is released \n");
+      // resetImage();
     }
   }
 
@@ -341,60 +348,35 @@ void hilevel_handler_irq(ctx_t* ctx) {
     uint16_t byte2;
     uint16_t byte3;
 
-    uint8_t x = PL050_getc( PS21 );
-/*
-    PL011_putc( UART0, '1',                      true );
-    PL011_putc( UART0, '<',                      true );
-    PL011_putc( UART0, itox( ( x >> 4 ) & 0xF ), true );
-    PL011_putc( UART0, itox( ( x >> 0 ) & 0xF ), true );
-    PL011_putc( UART0, '>',                      true );
-    */
-    switch (nbytes) {
+    uint8_t input1 = PL050_getc(PS21);
+    uint8_t input2 = PL050_getc(PS21);
+    uint8_t input3 = PL050_getc(PS21);
 
-     case 0 : {
-       uint16_t byte1      = ( uint16_t )( x );
-       if( ( (byte1 >> 0) & 0x1) != 0){
-         // print("Left button is pressed \n");
-         clearCursor();
-         clickCursor(cursorX, cursorY);
-       }
-    // uint16_t y_sign_bit = (byte1 >> 5) & 0x1;
-    // uint16_t x_sign_bit = (byte1 >> 4) & 0x1;
-       nbytes              = (nbytes + 1) % 3;
-
-       break;
+    byte1 = (uint16_t)(input1);
+      if (((byte1 >> 0) & 0x1) != 0){
+          print("Left button is pressed \n");
+          clearCursor();
+          clickCursor(cursorX, cursorY);
       }
+  
+     byte2 = ( uint16_t )( input2 );
+       int16_t x_delta  = byte2 - ((byte1 << 4) & 0x100);
+       x_delta          = x_delta/16;
+       print("x must move: "); print_int(x_delta); print("\n");
+       if((cursorX + x_delta) <= 0) cursorX = 0;
+       else if((cursorX + x_delta) >=783) cursorX = 783;
+       else cursorX     = (cursorX + x_delta );
 
-     case 1 : {
-       uint16_t byte2      = ( uint16_t )( x );
-       int16_t x_movement  = byte2 - ((byte1 << 4) & 0x100);
-       x_movement          = x_movement/16;
-       // print("x must move: "); print_int(x_movement); print("\n");
-       if((cursorX + x_movement) <= 0) cursorX = 0;
-       else if(cursorX >=800) cursorX = 800;
-       else cursorX       = (cursorX - x_movement );
-       nbytes              = (nbytes + 1) % 3;
+     byte3 = ( uint16_t )( input3 );
+       int16_t y_delta  = byte3 - ((byte1 << 3) & 0x100);
+       y_delta          = y_delta/16;
+       print("y must move: "); print_int(y_delta); print("\n");
+       if((cursorY - y_delta) <= 0) cursorY = 0;
+       else if((cursorY - y_delta) >=583) cursorY = 583;
+       else cursorY     = (cursorY - y_delta);
 
-       break;
-      }
-
-     case 2 : {
-       uint16_t byte3      = ( uint16_t )( x );
-       int16_t y_movement  = byte3 - ((byte1 << 3) & 0x100);
-       y_movement          = y_movement/16;
-       // print("y must move: "); print_int(y_movement); print("\n");
-
-       if((cursorY - y_movement) <= 0) cursorY = 0;
-       else if(cursorY >=600) cursorY = 600;
-       else cursorY       = (cursorY + y_movement );
-       mouseCursor( cursorX, cursorY );
-       // print("X = "); print_int(cursorX); print(" and ");
-       // print("Y = "); print_int(cursorY); print("\n");
-
-       nbytes              = (nbytes + 1) % 3;
-       break;
-      }
-    }
+    setCursor( cursorX, cursorY );
+    
 
 }
 
