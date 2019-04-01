@@ -23,7 +23,6 @@ extern void main_P5();
 extern void main_PX();
 extern void print();
 extern void print(char *message);
-
 extern void print_int(int n);
 
 pcb_t pcb[30];
@@ -32,6 +31,8 @@ pcb_t *current = NULL;
 int n = 1; //Total number of active process
 mutex (*mutexes)[30] = (void *)&tos_mutex;
 uint16_t fb[600][800];
+uint16_t fb_m[600][800];
+uint16_t fb_lcd[600][800];
 int nbytes;
 uint16_t cursorX; //Cursor xcoordinates
 uint16_t cursorY; //Cursor ycoordinates
@@ -67,11 +68,21 @@ int get_freepcb()
   {
     if (pcb[i].pid == -1)
     {
-      // PL011_putc(UART0, 'Q', true);
-      // PL011_putc(UART0, '0'+i, true);
       return i;
       break;
     }
+  }
+}
+
+void printPid(int n){
+  if(n < 10){
+    PL011_putc(UART0, '0' + n, true);
+  }
+  else{
+    int fst = n / 10;
+    int snd = n % 10;
+    PL011_putc(UART0, '0' + fst, true);
+    PL011_putc(UART0, '0' + snd, true);
   }
 }
 
@@ -93,14 +104,13 @@ void dispatch(ctx_t *ctx, pcb_t *prev, pcb_t *next)
   }
 
   PL011_putc(UART0, '[', true);
-  PL011_putc(UART0, prev_pid, true);
+  printPid(prev_pid - '0');
   PL011_putc(UART0, '-', true);
   PL011_putc(UART0, '>', true);
-  PL011_putc(UART0, next_pid, true);
+  printPid(next_pid - '0');
   PL011_putc(UART0, ']', true);
 
   executing = next_pid;
-  // PL011_putc(UART0, executing, true);
 
   prev->runtime = prev->runtime + 1; //Increase runtime
   current = next;                    // update   executing index   to P_{next}
@@ -113,31 +123,37 @@ uint32_t get_memloc(int pid)
   return (uint32_t)(&tos_console + (pid - 1) * (0x00001000));
 }
 
-/* resetImage() function: is used to set all the pixels of the LCD to black.
+/* resetSystemCanvas() function: is used to set all the pixels of the LCD to black.
 */
-void resetImage()
+void resetSystemCanvas()
 {
   for (int i = 0; i < 600; i++)
   {
     for (int j = 0; j < 800; j++)
     {
       fb[i][j] = 0;
+      fb_lcd[i][j] = 0;
     }
   }
 }
 
-void printNick()
+void resetMouseCanvas()
 {
-  int val;
-  for (int i = 0; i < 220; i++)
+  for (int i = 0; i < 600; i++)
   {
-    for (int j = 0; j < 166; j++)
+    for (int j = 0; j < 800; j++)
     {
-      val = nick[i][j];
-      if (val == 1)
-        fb[300 + i][220 + j] = 0x7FFF;
-      else
-        fb[50 + i][50 + j] = 0;
+      fb_m[i][j] = 0;
+    }
+  }
+}
+
+void flattenLayers(){
+  for (int i = 0; i < 600; i++)
+  {
+    for (int j = 0; j < 800; j++)
+    {
+      fb_lcd[i][j] = fb[i][j] ^ fb_m[i][j];
     }
   }
 }
@@ -174,7 +190,7 @@ void hilevel_handler_rst(ctx_t *ctx)
   LCD->LCDTiming1 = 0x0505F657; // per per Table 4.3 of datasheet
   LCD->LCDTiming2 = 0x071F1800; // per per Table 4.3 of datasheet
 
-  LCD->LCDUPBASE = (uint32_t)(&fb);
+  LCD->LCDUPBASE = (uint32_t)(&fb_lcd);
 
   LCD->LCDControl = 0x00000020;  // select TFT   display type
   LCD->LCDControl |= 0x00000008; // select 16BPP display mode
@@ -219,7 +235,9 @@ void hilevel_handler_rst(ctx_t *ctx)
 
   int_enable_irq();
 
-  resetImage();
+  resetSystemCanvas();
+  resetMouseCanvas();
+
   nbytes = 0;
   cursorX = 100;
   cursorY = 400;
@@ -309,7 +327,7 @@ void setCursor(int x, int y)
     {
       int val = (cursor[i] >> j) & 0x1;
       if (val == 1)
-        fb[y + i][x + j] = 0x7FFF;
+        fb_m[y + i][x + j] = 0x7FFF;
     }
   }
 }
@@ -325,7 +343,7 @@ void clickCursor(int x, int y)
     {
       int val = (cursor_click[i] >> j) & 0x1;
       if (val == 1)
-        fb[y + i][x + j] = 0x7FFF;
+        fb_m[y + i][x + j] = 0x7FFF;
     }
   }
 }
@@ -338,7 +356,7 @@ void clearCursor()
   {
     for (int j = 0; j < 16; j++)
     {
-      fb[cursorY + i][cursorX + j] = 0;
+      fb_m[cursorY + i][cursorX + j] = 0;
     }
   }
 }
@@ -380,6 +398,10 @@ void refreshTaskBar(){
     }
   }
   createTaskButton();
+}
+
+void taskBarClick(int mx, int my){
+  //TODO: Implement task switching
 }
 
 //Just a function to clear bits
@@ -427,7 +449,6 @@ void hilevel_handler_irq(ctx_t *ctx)
       uint8_t newx = clear_bit(x, 7);
       PL011_putc(UART0, lookup[newx], true);
       // print(" is released \n");
-      // resetImage();
     }
   }
 
@@ -444,12 +465,14 @@ void hilevel_handler_irq(ctx_t *ctx)
     uint8_t input2 = PL050_getc(PS21);
     uint8_t input3 = PL050_getc(PS21);
 
+    //CLICK
     byte1 = (uint16_t)(input1);
     if (((byte1 >> 0) & 0x1) != 0)
     {
       print("Left button is pressed \n");
       clearCursor();
       clickCursor(cursorX, cursorY);
+      if(cursorY >= 568) taskBarClick(cursorX, cursorY);
     }
 
     byte2 = (uint16_t)(input2);
@@ -479,11 +502,13 @@ void hilevel_handler_irq(ctx_t *ctx)
       cursorY = (cursorY - y_delta);
 
     setCursor(cursorX, cursorY);
+    flattenLayers();
   }
 
   // Step 5: write the interrupt identifier to signal we're done.
 
   GICC0->EOIR = id;
+  flattenLayers();
   return;
 }
 
@@ -515,6 +540,7 @@ void hilevel_handler_svc(ctx_t *ctx, uint32_t id)
     for (int i = 0; i < n; i++)
     {
       PL011_putc(UART0, *x++, true);
+      printpixels(ctoasc(*x), typeX, typeY);
     }
 
     ctx->gpr[0] = n;

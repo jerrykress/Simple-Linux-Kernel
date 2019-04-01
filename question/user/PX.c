@@ -24,18 +24,15 @@ void think(){
 
 
 void eat(){
-    PL011_putc(UART0, '0' + pidd(), true);
-    PL011_putc(UART0, ':', true);
-    PL011_putc(UART0, 'E', true);
-    PL011_putc(UART0, 'A', true);
-    PL011_putc(UART0, 'T', true);
+    print_int(pidd());
+    print(":EAT");
 }
 
 
 bool pickup(int id){
     int l = pidd() - 1;
     int r = pidd();
-    if(id == 9) r = 1;
+    if(id == 17) r = 1;
     int w1 = mutx(l, 2, 0);
     int w2 = mutx(r, 2, 0);
 
@@ -47,7 +44,7 @@ bool pickup(int id){
 void putdown(int id){
     int l = pidd() - 1;
     int r = pidd();
-    if(id == 9) r = 1;
+    if(id == 17) r = 1;
     int r1 = mutx(l, 3, 0);
     int r2 = mutx(r, 3, 0);
 }
@@ -67,11 +64,8 @@ void phil(){
 void main_PX(){
     fork();
     fork();
-    fork(); //pid:2-9
-
-    PL011_putc(UART0, '>', true);
-    PL011_putc(UART0, '0' + pidd(), true);
-    PL011_putc(UART0, '<', true);
+    fork();
+    fork(); //pid:2-17
 
     while(1){
         if (pidd() % 2 == 0){
