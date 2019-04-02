@@ -103,13 +103,14 @@ void dispatch(ctx_t *ctx, pcb_t *prev, pcb_t *next)
     next_pid = '0' + next->pid;
   }
 
+  print("\n");
   PL011_putc(UART0, '[', true);
   printPid(prev_pid - '0');
   PL011_putc(UART0, '-', true);
   PL011_putc(UART0, '>', true);
   printPid(next_pid - '0');
   PL011_putc(UART0, ']', true);
-
+  
   executing = next_pid;
 
   prev->runtime = prev->runtime + 1; //Increase runtime
@@ -256,16 +257,39 @@ void schedule(ctx_t *ctx)
 
     if (current->pid == pcb[i].pid && current->status == STATUS_EXECUTING)
     {
+      int next;
+      int priority_pid = 0;
+      bool priority_mode = false;
       int r = i + 1;
-      if ((r % n) != i)
+      if ((r % n) != i) //If there is more than 1 program running
       {
-        while (pcb[r % n].status != STATUS_READY && (r % n != i))
-        {
-          r++;
+
+        for(int j = 0; j < n; j++){ //try and find if there's a higher priority program
+          if (pcb[j].priority > 1){
+            if (priority_mode == false){
+              priority_mode = true;
+              priority_pid = j + 1;
+            } 
+          }
+
+          if (pcb[j].priority > pcb[priority_pid - 1].priority){ //find the highest priority program
+              priority_pid = j + 1;
+          }
         }
       }
 
-      dispatch(ctx, &pcb[i], &pcb[r % n]);
+      if(priority_mode){
+          next = priority_pid - 1;
+          pcb[next].priority--;
+        } else { //if all programs have priority 1
+          while (pcb[r % n].status != STATUS_READY && (r % n != i)) //find the next ready program and stop when loop back to the current
+          {
+            r++;
+          }
+          next = r % n;
+        }
+
+      dispatch(ctx, &pcb[i], &pcb[next]);
       break;
     }
 
@@ -593,7 +617,7 @@ void hilevel_handler_svc(ctx_t *ctx, uint32_t id)
 
   case 0x07:
   { //SYS_NICE
-
+    pcb[ctx->gpr[0] - 1].priority+=3;
     break;
   }
 

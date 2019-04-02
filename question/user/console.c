@@ -114,6 +114,17 @@ void main_console() {
       }
 
     } 
+    else if( 0 == strcmp( p, "nice" ) ) {
+      pid_t pid = atoi( strtok( NULL, " " ) );
+      int   s   = atoi( strtok( NULL, " " ) );
+
+      if(pid != 1){
+        nice( pid, s );
+      }
+      else{
+        print("cannot prioritise console\n");
+      }
+    }
     else {
       puts( "unknown command\n", 16 );
     }
