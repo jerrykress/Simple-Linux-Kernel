@@ -280,7 +280,10 @@ void schedule(ctx_t *ctx)
 
       if(priority_mode){
           next = priority_pid - 1;
-          pcb[next].priority--;
+          if(pcb[next].runtime > 5){ //reduce priority when runtime reaches 5
+            pcb[next].priority--;
+            pcb[next].runtime = 0;
+          }
         } else { //if all programs have priority 1
           while (pcb[r % n].status != STATUS_READY && (r % n != i)) //find the next ready program and stop when loop back to the current
           {
@@ -583,6 +586,7 @@ void hilevel_handler_svc(ctx_t *ctx, uint32_t id)
     pcb[pid_c - 1].pid = pid_c;
     pcb[pid_c - 1].status = STATUS_CREATED;
     pcb[pid_c - 1].priority = 1;
+    pcb[pid_c - 1].runtime = 0;
 
     memcpy((void *)get_memloc(pid_c) - 0x00001000, (void *)get_memloc(current->pid) - 0x00001000, 0x00001000);
     uint32_t offset = (uint32_t)get_memloc(current->pid) - (uint32_t)pcb[current->pid - 1].ctx.sp;
