@@ -457,7 +457,9 @@ void hilevel_handler_irq(ctx_t *ctx)
 
     if ((x >> 7) == 0)
     {
+      print("PS20: ");
       PL011_putc(UART0, lookup[x], true); //Shows what is pressed on the keyboard
+      print("\n");
       int asc = ctoasc(lookup[x]);
       if (asc == 10) enterNewLine();
       else if (asc == 8)  backspace();
@@ -502,7 +504,7 @@ void hilevel_handler_irq(ctx_t *ctx)
     byte2 = (uint16_t)(input2);
     int16_t x_delta = byte2 - ((byte1 << 4) & 0x100);
     x_delta = x_delta / 16;
-    print("x must move: ");
+    print("PS21_delta_x: ");
     print_int(x_delta);
     print("\n");
     if ((cursorX + x_delta) <= 0)
@@ -515,7 +517,7 @@ void hilevel_handler_irq(ctx_t *ctx)
     byte3 = (uint16_t)(input3);
     int16_t y_delta = byte3 - ((byte1 << 3) & 0x100);
     y_delta = y_delta / 16;
-    print("y must move: ");
+    print("PS21_delta_y: ");
     print_int(y_delta);
     print("\n");
     if ((cursorY - y_delta) <= 0)
@@ -580,6 +582,7 @@ void hilevel_handler_svc(ctx_t *ctx, uint32_t id)
     memcpy(&pcb[pid_c - 1].ctx, ctx, sizeof(ctx_t));
     pcb[pid_c - 1].pid = pid_c;
     pcb[pid_c - 1].status = STATUS_CREATED;
+    pcb[pid_c - 1].priority = 1;
 
     memcpy((void *)get_memloc(pid_c) - 0x00001000, (void *)get_memloc(current->pid) - 0x00001000, 0x00001000);
     uint32_t offset = (uint32_t)get_memloc(current->pid) - (uint32_t)pcb[current->pid - 1].ctx.sp;
@@ -710,6 +713,7 @@ void hilevel_handler_svc(ctx_t *ctx, uint32_t id)
   { // 0x?? => unknown/unsupported
     break;
   }
+
   }
 
   return;
