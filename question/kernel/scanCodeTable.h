@@ -1,8 +1,8 @@
-#ifndef __LOOKUPTABLE_H
-#define __LOOKUPTABLE_H
+#ifndef __SCANCODE_H
+#define __SCANCODE_H
 
 
-unsigned char lookup[128] =
+unsigned char scanCode[128] =
 {
     0,  27, '1', '2', '3', '4', '5', '6', '7', '8',	/* 9 */
   '9', '0', '-', '=', '\b',	/* Backspace */

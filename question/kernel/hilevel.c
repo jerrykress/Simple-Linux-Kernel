@@ -124,9 +124,8 @@ uint32_t get_memloc(int pid)
   return (uint32_t)(&tos_console + (pid - 1) * (0x00001000));
 }
 
-/* resetSystemCanvas() function: is used to set all the pixels of the LCD to black.
-*/
-void resetSystemCanvas()
+/* Set all the pixels of the background canvas to black*/
+void reset_system_canvas()
 {
   for (int i = 0; i < 600; i++)
   {
@@ -138,7 +137,8 @@ void resetSystemCanvas()
   }
 }
 
-void resetMouseCanvas()
+/* Set all the pixels of the foreground canvas to black*/
+void reset_mouse_canvas()
 {
   for (int i = 0; i < 600; i++)
   {
@@ -149,6 +149,7 @@ void resetMouseCanvas()
   }
 }
 
+//Merge all display layers for output
 void flattenLayers(){
   for (int i = 0; i < 600; i++)
   {
@@ -236,8 +237,8 @@ void hilevel_handler_rst(ctx_t *ctx)
 
   int_enable_irq();
 
-  resetSystemCanvas();
-  resetMouseCanvas();
+  reset_system_canvas();
+  reset_mouse_canvas();
 
   nbytes = 0;
   cursorX = 100;
@@ -312,9 +313,7 @@ void schedule(ctx_t *ctx)
   return;
 }
 
-/* ctoasc (char c) function: is used to convert a character c
-* to its corresponding ascii code.
-*/
+/*Convert char to its ascii value*/
 int ctoasc(char c)
 {
   int x;
@@ -322,11 +321,8 @@ int ctoasc(char c)
   return x;
 }
 
-/* printpixels function: is used to print pixelated letters on the LCD by using
-* a lookupTable first to find the corresponding character that came from the
-* keyboard interrupt, and then another table to find the letter's format.
-*/
-void printpixels(int asc, int x, int y)
+/*Print out the desired char on background canvas pixel by pixel*/
+void display(int asc, int x, int y)
 {
   int val;
   for (int i = 16; i > 0; i--)
@@ -343,10 +339,8 @@ void printpixels(int asc, int x, int y)
   }
 }
 
-/* setCursor function: sets all the pixels that are needed to create a cursor
-* image on the screen.
-*/
-void setCursor(int x, int y)
+/*Print the cursor*/
+void print_cursor(int x, int y)
 {
   for (int i = 0; i < 16; i++)
   {
@@ -359,10 +353,8 @@ void setCursor(int x, int y)
   }
 }
 
-/*clickCursor function: sets all the pixels that are needed to create a click_cursor
-* image on the screen.
-*/
-void clickCursor(int x, int y)
+/*Print a clicked cursor*/
+void print_clicked_cursor(int x, int y)
 {
   for (int i = 0; i < 16; i++)
   {
@@ -375,8 +367,7 @@ void clickCursor(int x, int y)
   }
 }
 
-/*Clears the current cursor from LCD.
-*/
+/*Clears the printed cursor from mouse canvas layer*/
 void clearCursor()
 {
   for (int i = 0; i < 16; i++)
@@ -388,6 +379,7 @@ void clearCursor()
   }
 }
 
+/*Moving typing cursor to the correct position when press enter key*/
 void enterNewLine(){
   typeY = typeY + 24;
   typeX = 50;
@@ -410,7 +402,7 @@ void createTaskButton(){
 
   for(int i = 0; i < 30; i++){
     if(pcb[i].status == STATUS_EXECUTING || pcb[i].status == STATUS_READY){
-      printpixels(ctoasc('0'+pcb[i].pid), taskBarX, taskBarY);
+      display(ctoasc('0'+pcb[i].pid), taskBarX, taskBarY);
       taskBarX = taskBarX + 32;
     }
   }
@@ -431,13 +423,11 @@ void taskBarClick(int mx, int my){
   //TODO: Implement task switching
 }
 
-//Just a function to clear bits
-uint8_t clear_bit(uint8_t x, int bit)
+//Reset all the bits in the given uint
+uint8_t reset_bit(uint8_t x, int bit)
 {
   return (x &= ~(1 << bit));
 }
-
-int offsetLettersX = 0, offsetLettersY = 0;
 
 void hilevel_handler_irq(ctx_t *ctx)
 {
@@ -456,18 +446,18 @@ void hilevel_handler_irq(ctx_t *ctx)
 
   else if (id == GIC_SOURCE_PS20) // KEYBOARD
   {
-    uint8_t x = PL050_getc(PS20);
+    uint8_t c = PL050_getc(PS20);
 
-    if ((x >> 7) == 0)
+    if ((c >> 7) == 0)
     {
       print("PS20: ");
-      PL011_putc(UART0, lookup[x], true); //Shows what is pressed on the keyboard
+      PL011_putc(UART0, scanCode[c], true); 
       print("\n");
-      int asc = ctoasc(lookup[x]);
+      int asc = ctoasc(scanCode[c]);
       if (asc == 10) enterNewLine();
       else if (asc == 8)  backspace();
       else{
-        printpixels(asc, typeX, typeY);
+        display(asc, typeX, typeY);
         typeX = typeX + 16;
       }
 
@@ -475,9 +465,9 @@ void hilevel_handler_irq(ctx_t *ctx)
 
     else
     {
-      uint8_t newx = clear_bit(x, 7);
-      PL011_putc(UART0, lookup[newx], true);
-      // print(" is released \n");
+      uint8_t newChar = reset_bit(c, 7);
+      PL011_putc(UART0, scanCode[newChar], true);
+      print(" is released \n");
     }
   }
 
@@ -500,10 +490,11 @@ void hilevel_handler_irq(ctx_t *ctx)
     {
       print("Left button is pressed \n");
       clearCursor();
-      clickCursor(cursorX, cursorY);
+      print_clicked_cursor(cursorX, cursorY);
       if(cursorY >= 568) taskBarClick(cursorX, cursorY);
     }
 
+    //X-Axis movement
     byte2 = (uint16_t)(input2);
     int16_t x_delta = byte2 - ((byte1 << 4) & 0x100);
     x_delta = x_delta / 16;
@@ -517,6 +508,7 @@ void hilevel_handler_irq(ctx_t *ctx)
     else
       cursorX = (cursorX + x_delta);
 
+    //Y-Axis movement
     byte3 = (uint16_t)(input3);
     int16_t y_delta = byte3 - ((byte1 << 3) & 0x100);
     y_delta = y_delta / 16;
@@ -530,13 +522,14 @@ void hilevel_handler_irq(ctx_t *ctx)
     else
       cursorY = (cursorY - y_delta);
 
-    setCursor(cursorX, cursorY);
+    print_cursor(cursorX, cursorY);
     flattenLayers();
   }
 
   // Step 5: write the interrupt identifier to signal we're done.
 
   GICC0->EOIR = id;
+  //Merge all display layers for LCD output
   flattenLayers();
   return;
 }
@@ -568,8 +561,8 @@ void hilevel_handler_svc(ctx_t *ctx, uint32_t id)
 
     for (int i = 0; i < n; i++)
     {
+      display(*x, typeX, typeY);
       PL011_putc(UART0, *x++, true);
-      printpixels(ctoasc(*x), typeX, typeY);
     }
 
     ctx->gpr[0] = n;
