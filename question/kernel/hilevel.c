@@ -29,6 +29,7 @@ pcb_t pcb[30];
 char executing = '0';
 pcb_t *current = NULL;
 int n = 1; //Total number of active process
+int foreground = 1; //Foreground application
 mutex (*mutexes)[30] = (void *)&tos_mutex;
 uint16_t fb[600][800];
 uint16_t fb_m[600][800];
@@ -127,7 +128,7 @@ uint32_t get_memloc(int pid)
 /* Set all the pixels of the background canvas to black*/
 void reset_system_canvas()
 {
-  for (int i = 0; i < 600; i++)
+  for (int i = 0; i <= 566; i++)
   {
     for (int j = 0; j < 800; j++)
     {
@@ -403,6 +404,14 @@ void createTaskButton(){
   for(int i = 0; i < 30; i++){
     if(pcb[i].status == STATUS_EXECUTING || pcb[i].status == STATUS_READY){
       display(ctoasc('0'+pcb[i].pid), taskBarX, taskBarY);
+      // foreground = current->pid;
+      if(pcb[i].pid == foreground){
+        for(int i = taskBarX; i<= taskBarX + 16; i++){
+          for(int j = 596; j <= 599; j++){
+            fb[j][i] = 0;
+          }
+        }
+      }
       taskBarX = taskBarX + 32;
     }
   }
@@ -420,7 +429,20 @@ void refreshTaskBar(){
 }
 
 void taskBarClick(int mx, int my){
-  //TODO: Implement task switching
+  int active_index = 0;
+  int clicked_task = (cursorX - 8) / 32 + 1;
+  for(int i = 0; i < 30; i++){
+    if(pcb[i].status == STATUS_EXECUTING || pcb[i].status == STATUS_READY){
+      active_index++;
+      if(active_index == clicked_task){
+        foreground = pcb[i].pid;
+      }
+    }
+  }
+
+  typeX = 50;
+  typeY = 50;
+  reset_system_canvas();
 }
 
 //Reset all the bits in the given uint
@@ -711,7 +733,8 @@ void hilevel_handler_svc(ctx_t *ctx, uint32_t id)
     int x = ctx->gpr[1];
     int y = ctx->gpr[2];
 
-    if(x == 999 || y == 999){
+    if(current->pid == foreground){
+      if(x == 999 || y == 999){
       if(typeX >= 750){
         if(typeY >= 500) typeY = 50;
         typeX = 50;
@@ -719,9 +742,11 @@ void hilevel_handler_svc(ctx_t *ctx, uint32_t id)
       }
       display(new_asc, typeX, typeY);
       typeX = typeX + 16;
-    } else {
-      display(new_asc, x, y);
+      } else {
+        display(new_asc, x, y);
+      }
     }
+    
     break;
   }
 
