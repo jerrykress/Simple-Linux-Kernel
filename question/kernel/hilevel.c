@@ -561,7 +561,6 @@ void hilevel_handler_svc(ctx_t *ctx, uint32_t id)
 
     for (int i = 0; i < n; i++)
     {
-      display(*x, typeX, typeY);
       PL011_putc(UART0, *x++, true);
     }
 
@@ -704,6 +703,26 @@ void hilevel_handler_svc(ctx_t *ctx, uint32_t id)
     ctx->gpr[5] = r;
     break;
     schedule(ctx);
+  }
+
+  case 0x0A:
+  { //SYS_SHOW
+    int new_asc = ctx->gpr[0];
+    int x = ctx->gpr[1];
+    int y = ctx->gpr[2];
+
+    if(x == 999 || y == 999){
+      if(typeX >= 750){
+        if(typeY >= 500) typeY = 50;
+        typeX = 50;
+        typeY = typeY + 24;
+      }
+      display(new_asc, typeX, typeY);
+      typeX = typeX + 16;
+    } else {
+      display(new_asc, x, y);
+    }
+    break;
   }
 
   default:

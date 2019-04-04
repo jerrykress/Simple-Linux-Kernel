@@ -40,6 +40,7 @@ typedef int pid_t;
 #define SYS_NICE      ( 0x07 )
 #define SYS_MUTX      ( 0x08 )
 #define SYS_PIDD      ( 0x09 )
+#define SYS_SHOW      ( 0x0A )
 
 #define SIG_TERM      ( 0x00 )
 #define SIG_QUIT      ( 0x01 )
@@ -83,5 +84,7 @@ extern int pidd();
 extern void print(char *message);
 
 extern void print_int(int n);
+
+extern void show(int asc, int x, int y);
 
 #endif

@@ -20,7 +20,8 @@ uint32_t weight( uint32_t x ) {
 void main_P3() {
   while( 1 ) {
     write( STDOUT_FILENO, "P3", 2 );
-
+    show((int)('P'), 999, 999);
+    show((int)('3'), 999, 999);
     uint32_t lo = 1 <<  8;
     uint32_t hi = 1 << 24;
 

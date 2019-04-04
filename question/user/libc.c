@@ -195,3 +195,14 @@ int pidd() {
 
   return r;
 }
+
+void show(int asc, int x, int y){
+  asm volatile("mov r0, %1 \n"
+               "mov r1, %2 \n"
+               "mov r2, %3 \n"
+               "svc %0     \n"
+               :
+               : "I"(SYS_SHOW), "r"(asc), "r"(x), "r"(y)
+               : "r0", "r1", "r2");
+  return;
+}
