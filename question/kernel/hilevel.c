@@ -324,10 +324,10 @@ int ctoasc(char c)
 void display(int asc, int x, int y)
 {
   int bit;
-  for (int i = 16; i > 0; i--)
+  for (int i = 8; i > 0; i--)
   {
-    int pix = ascii[asc][i];
-    for (int j = 0; j < 16; j++)
+    int pix = font_white[asc][i];
+    for (int j = 0; j < 8; j++)
     {
       bit = (pix >> j) & 0x1;
       if (bit == 1){
@@ -453,6 +453,7 @@ void refreshTaskBar(){
   print_icon(plus_button, 774, 578);
   print_icon(right_arrow, 738,578);
   print_icon(left_arrow, 702, 578);
+  print_icon(nice_button, 10, 4);
 }
 
 void taskBarClick(){
@@ -485,6 +486,10 @@ void rightButtonClick(){
 
 void leftButtonClick(){
   if(foreground >= 2) foreground--;
+}
+
+void niceButtonClick(){
+  if(foreground != 1) pcb[foreground - 1].priority += 3;
 }
 
 //Reset all the bits in the given uint
@@ -557,6 +562,7 @@ void hilevel_handler_irq(ctx_t *ctx)
       print_clicked_cursor(cursorX, cursorY);
       if(cursorY >= 568 && cursorX <= 738) taskBarClick();
       else if(cursorY <= 24 && cursorX >= 774) abortButtonClick();
+      else if(cursorY <= 24 && cursorX <= 26) niceButtonClick();
       else if(cursorY >= 568 && cursorX >= 738 && cursorX <= 754) rightButtonClick();
       else if(cursorY >= 568 && cursorX >= 702 && cursorX <= 718) rightButtonClick();
     }
