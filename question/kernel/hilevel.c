@@ -127,7 +127,7 @@ uint32_t get_memloc(int pid)
 /* Set all the pixels of the background canvas to black*/
 void reset_system_canvas()
 {
-  for (int i = 0; i <= 566; i++)
+  for (int i = 24; i <= 566; i++)
   {
     for (int j = 0; j < 800; j++)
     {
@@ -243,7 +243,7 @@ void hilevel_handler_rst(ctx_t *ctx)
   cursorX = 100;
   cursorY = 400;
   typeX = 50;
-  typeY = 50;
+  typeY = 75;
 
   dispatch(ctx, NULL, &pcb[0]);
   return;
@@ -339,6 +339,21 @@ void display(int asc, int x, int y)
   }
 }
 
+void print_icon(uint16_t icon[16], int x, int y){
+  for (int i = 0; i < 16; i++)
+  {
+    for (int j = 0; j < 16; j++)
+    {
+      int val = (icon[i] >> (15-j)) & 0x1;
+      if (val == 1){
+        fb_s[y + i][x + j] = 0x7FFF;
+      } else {
+        fb_s[y + i][x + j] = 0;
+      }
+    }
+  }
+}
+
 /*Print the cursor*/
 void print_cursor(int x, int y)
 {
@@ -346,8 +361,8 @@ void print_cursor(int x, int y)
   {
     for (int j = 0; j < 16; j++)
     {
-      int val = (cursor[i] >> j) & 0x1;
-      if (val == 1){
+      int bit = (cursor[i] >> j) & 0x1;
+      if (bit == 1){
         fb_m[y + i][x + j] = 0x7FFF;
       }
     }
@@ -361,8 +376,8 @@ void print_clicked_cursor(int x, int y)
   {
     for (int j = 0; j < 16; j++)
     {
-      int val = (cursor_click[i] >> j) & 0x1;
-      if (val == 1){
+      int bit = (cursor_click[i] >> j) & 0x1;
+      if (bit == 1){
         fb_m[y + i][x + j] = 0x7FFF;
       }
     }
@@ -403,7 +418,7 @@ void createTaskButton(){
   int taskBarY = 575;
 
   for(int i = 0; i < 30; i++){
-    if(pcb[i].status == STATUS_EXECUTING || pcb[i].status == STATUS_READY){
+    if(pcb[i].status == STATUS_EXECUTING || pcb[i].status == STATUS_READY && taskBarX <= 680){
       display(ctoasc('0'+pcb[i].pid), taskBarX, taskBarY);
       // foreground = current->pid;
       if(pcb[i].pid == foreground){
@@ -426,7 +441,18 @@ void refreshTaskBar(){
       fb_s[i][j] = 0x7FFF;
     }
   }
+  for (int i = 0; i < 24; i++)
+  {
+    for(int j = 0; j < 800; j++)
+    {
+      fb_s[i][j] = 0x7FFF;
+    }
+  }
   createTaskButton();
+  print_icon(abort_button, 774, 4);
+  print_icon(plus_button, 774, 578);
+  print_icon(right_arrow, 738,578);
+  print_icon(left_arrow, 702, 578);
 }
 
 void taskBarClick(){
@@ -442,8 +468,23 @@ void taskBarClick(){
   }
 
   typeX = 50;
-  typeY = 50;
+  typeY = 75;
   reset_system_canvas();
+}
+
+void abortButtonClick(){
+  if(foreground != 1){
+    pcb[foreground - 1].status = STATUS_TERMINATED;
+    foreground = 1;
+  }
+}
+
+void rightButtonClick(){
+  foreground++;
+}
+
+void leftButtonClick(){
+  if(foreground >= 2) foreground--;
 }
 
 //Reset all the bits in the given uint
@@ -460,14 +501,16 @@ void hilevel_handler_irq(ctx_t *ctx)
 
   // Step 4: handle the interrupt, then clear (or reset) the source.
 
-  if (id == GIC_SOURCE_TIMER0) //TIMER
+  //TIMER
+  if (id == GIC_SOURCE_TIMER0) 
   {
     schedule(ctx);
     refreshTaskBar();
     TIMER0->Timer1IntClr = 0x01;
   }
 
-  else if (id == GIC_SOURCE_PS20) // KEYBOARD
+  // KEYBOARD
+  else if (id == GIC_SOURCE_PS20) 
   {
     uint8_t c = PL050_getc(PS20);
 
@@ -483,7 +526,6 @@ void hilevel_handler_irq(ctx_t *ctx)
         display(asc, typeX, typeY);
         typeX = typeX + 16;
       }
-
     }
 
     else
@@ -497,7 +539,6 @@ void hilevel_handler_irq(ctx_t *ctx)
   //MOUSE INTERRUPT
   else if (id == GIC_SOURCE_PS21)
   {
-
     clearCursor();
     uint16_t byte1;
     uint16_t byte2;
@@ -507,17 +548,20 @@ void hilevel_handler_irq(ctx_t *ctx)
     uint8_t input2 = PL050_getc(PS21);
     uint8_t input3 = PL050_getc(PS21);
 
-    //CLICK
+    //CLICK STATUS
     byte1 = (uint16_t)(input1);
     if (((byte1 >> 0) & 0x1) != 0)
     {
       print("Left button is pressed \n");
       clearCursor();
       print_clicked_cursor(cursorX, cursorY);
-      if(cursorY >= 568) taskBarClick();
+      if(cursorY >= 568 && cursorX <= 738) taskBarClick();
+      else if(cursorY <= 24 && cursorX >= 774) abortButtonClick();
+      else if(cursorY >= 568 && cursorX >= 738 && cursorX <= 754) rightButtonClick();
+      else if(cursorY >= 568 && cursorX >= 702 && cursorX <= 718) rightButtonClick();
     }
 
-    //X-Axis movement
+    //X-DELTA
     byte2 = (uint16_t)(input2);
     int16_t x_delta = byte2 - ((byte1 << 4) & 0x100);
     x_delta = x_delta / 16;
@@ -531,7 +575,7 @@ void hilevel_handler_irq(ctx_t *ctx)
     else
       cursorX = (cursorX + x_delta);
 
-    //Y-Axis movement
+    //Y-DELTA
     byte3 = (uint16_t)(input3);
     int16_t y_delta = byte3 - ((byte1 << 3) & 0x100);
     y_delta = y_delta / 16;
@@ -736,7 +780,7 @@ void hilevel_handler_svc(ctx_t *ctx, uint32_t id)
     if(current->pid == foreground){
       if(x == 999 || y == 999){
       if(typeX >= 750){
-        if(typeY >= 500) typeY = 50;
+        if(typeY >= 500) typeY = 75;
         typeX = 50;
         typeY = typeY + 24;
       }

@@ -25,7 +25,7 @@ void think(){
 
 void eat(){
     print_int(pidd());
-    print(":EAT");
+    print(":EAT\n");
 }
 
 
