@@ -31,10 +31,9 @@ pcb_t *current = NULL;
 int n = 1; //Total number of active process
 int foreground = 1; //Foreground application
 mutex (*mutexes)[30] = (void *)&tos_mutex;
-uint16_t fb[600][800];
+uint16_t fb_s[600][800];
 uint16_t fb_m[600][800];
 uint16_t fb_lcd[600][800];
-int nbytes;
 uint16_t cursorX; //Cursor xcoordinates
 uint16_t cursorY; //Cursor ycoordinates
 uint16_t typeX;
@@ -132,7 +131,7 @@ void reset_system_canvas()
   {
     for (int j = 0; j < 800; j++)
     {
-      fb[i][j] = 0;
+      fb_s[i][j] = 0;
       fb_lcd[i][j] = 0;
     }
   }
@@ -156,7 +155,7 @@ void flattenLayers(){
   {
     for (int j = 0; j < 800; j++)
     {
-      fb_lcd[i][j] = fb[i][j] ^ fb_m[i][j];
+      fb_lcd[i][j] = fb_s[i][j] ^ fb_m[i][j];
     }
   }
 }
@@ -241,7 +240,6 @@ void hilevel_handler_rst(ctx_t *ctx)
   reset_system_canvas();
   reset_mouse_canvas();
 
-  nbytes = 0;
   cursorX = 100;
   cursorY = 400;
   typeX = 50;
@@ -325,17 +323,18 @@ int ctoasc(char c)
 /*Print out the desired char on background canvas pixel by pixel*/
 void display(int asc, int x, int y)
 {
-  int val;
+  int bit;
   for (int i = 16; i > 0; i--)
   {
     int pix = ascii[asc][i];
     for (int j = 0; j < 16; j++)
     {
-      val = (pix >> j) & 0x1; // pixel is shifted to see whether the bit is 1 or 0.
-      if (val == 1)
-        fb[y + i][x + j] = 0;
-      else
-        fb[y + i][x + j] = 0x7FFF;
+      bit = (pix >> j) & 0x1;
+      if (bit == 1){
+        fb_s[y + i][x + j] = 0;
+      } else{  
+        fb_s[y + i][x + j] = 0x7FFF;
+      }
     }
   }
 }
@@ -348,8 +347,9 @@ void print_cursor(int x, int y)
     for (int j = 0; j < 16; j++)
     {
       int val = (cursor[i] >> j) & 0x1;
-      if (val == 1)
+      if (val == 1){
         fb_m[y + i][x + j] = 0x7FFF;
+      }
     }
   }
 }
@@ -362,8 +362,9 @@ void print_clicked_cursor(int x, int y)
     for (int j = 0; j < 16; j++)
     {
       int val = (cursor_click[i] >> j) & 0x1;
-      if (val == 1)
+      if (val == 1){
         fb_m[y + i][x + j] = 0x7FFF;
+      }
     }
   }
 }
@@ -392,7 +393,7 @@ void backspace(){
   {
     for (int j = 0; j <= 16; j++)
     {
-      fb[typeY + i][typeX + j] = 0;
+      fb_s[typeY + i][typeX + j] = 0;
     }
   }
 }
@@ -408,7 +409,7 @@ void createTaskButton(){
       if(pcb[i].pid == foreground){
         for(int i = taskBarX; i<= taskBarX + 16; i++){
           for(int j = 596; j <= 599; j++){
-            fb[j][i] = 0;
+            fb_s[j][i] = 0;
           }
         }
       }
@@ -422,13 +423,13 @@ void refreshTaskBar(){
   {
     for(int j = 0; j < 800; j++)
     {
-      fb[i][j] = 0x7FFF;
+      fb_s[i][j] = 0x7FFF;
     }
   }
   createTaskButton();
 }
 
-void taskBarClick(int mx, int my){
+void taskBarClick(){
   int active_index = 0;
   int clicked_task = (cursorX - 8) / 32 + 1;
   for(int i = 0; i < 30; i++){
@@ -513,7 +514,7 @@ void hilevel_handler_irq(ctx_t *ctx)
       print("Left button is pressed \n");
       clearCursor();
       print_clicked_cursor(cursorX, cursorY);
-      if(cursorY >= 568) taskBarClick(cursorX, cursorY);
+      if(cursorY >= 568) taskBarClick();
     }
 
     //X-Axis movement
@@ -571,7 +572,6 @@ void hilevel_handler_svc(ctx_t *ctx, uint32_t id)
   case 0x00:
   { // 0x00 => yield()
     schedule(ctx);
-
     break;
   }
 
