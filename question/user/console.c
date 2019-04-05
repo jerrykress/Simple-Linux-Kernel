@@ -91,6 +91,13 @@ void* load( char* x ) {
 void main_console() {
   char* p, x[ 1024 ];
 
+  show((int)('l'), 999, 999);
+  show((int)('e'), 999, 999);
+  show((int)('m'), 999, 999);
+  show((int)('o'), 999, 999);
+  show((int)('n'), 999, 999);
+  show((int)('$'), 999, 999);
+
   while( 1 ) {
     puts( "shell$ ", 7 ); gets( x, 1024 ); p = strtok( x, " " );
 

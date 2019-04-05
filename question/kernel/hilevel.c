@@ -25,19 +25,25 @@ extern void print();
 extern void print(char *message);
 extern void print_int(int n);
 
+//KERNEL 
 pcb_t pcb[30];
 char executing = '0';
 pcb_t *current = NULL;
 int n = 1; //Total number of active process
-int foreground = 1; //Foreground application
 mutex (*mutexes)[30] = (void *)&tos_mutex;
+
+//LCD/UI
+int foreground = 1; //Foreground application
 uint16_t fb_s[600][800];
 uint16_t fb_m[600][800];
 uint16_t fb_lcd[600][800];
+uint16_t buttonColors[7] = {0, 0, 0, 0, 0, 0};
 uint16_t cursorX; //Cursor xcoordinates
 uint16_t cursorY; //Cursor ycoordinates
 uint16_t typeX;
 uint16_t typeY;
+bool showAll = false;
+
 
 caddr_t _sbrk(int incr)
 {
@@ -149,6 +155,60 @@ void reset_mouse_canvas()
   }
 }
 
+/*print icons by given bitmap,  x, y, and hex color*/
+void print_icon(uint16_t icon[16], int x, int y, uint16_t color){
+  for (int i = 0; i < 16; i++)
+  {
+    for (int j = 0; j < 16; j++)
+    {
+      int val = (icon[i] >> (15-j)) & 0x1;
+      if (val == 1){
+        fb_s[y + i][x + j] = 0x7FFF;
+      } else {
+        fb_s[y + i][x + j] = color;
+      }
+    }
+  }
+}
+
+/*re-display buttons with colors*/
+void refreshButtons(){
+  for (int i = 0; i < 24; i++)
+  {
+    for(int j = 0; j < 800; j++)
+    {
+      fb_s[i][j] = 0x7FFF;
+    }
+  }
+  print_icon(abort_button, 774, 4, buttonColors[0]); //buttonColors[0]
+  print_icon(nice_button, 10, 4, buttonColors[1]);
+  print_icon(showAllButton, 392, 4, buttonColors[2]);
+  print_icon(plus_button, 774, 578, buttonColors[3]);
+  print_icon(right_arrow, 738, 578, buttonColors[4]);
+  print_icon(left_arrow, 702, 578, buttonColors[5]);
+}
+
+/*Initialise UI view, including taskbar, action bar and clear all canvas*/
+void init_view(){
+
+  reset_system_canvas();
+  reset_mouse_canvas();
+  refreshButtons();
+
+  cursorX = 100;
+  cursorY = 400;
+  typeX = 50;
+  typeY = 75;
+
+  for (int i = 567; i < 600; i++)
+  {
+    for(int j = 0; j < 800; j++)
+    {
+      fb_s[i][j] = 0x7FFF;
+    }
+  }
+}
+
 //Merge all display layers for output
 void flattenLayers(){
   for (int i = 0; i < 600; i++)
@@ -236,14 +296,7 @@ void hilevel_handler_rst(ctx_t *ctx)
   GICD0->CTLR = 0x00000001;        // enable GIC distributor
 
   int_enable_irq();
-
-  reset_system_canvas();
-  reset_mouse_canvas();
-
-  cursorX = 100;
-  cursorY = 400;
-  typeX = 50;
-  typeY = 75;
+  init_view();
 
   dispatch(ctx, NULL, &pcb[0]);
   return;
@@ -285,13 +338,16 @@ void schedule(ctx_t *ctx)
             pcb[next].runtime = 0;
           }
         } else { //if all programs have priority 1
-          while (pcb[r % n].status != STATUS_READY && (r % n != i)) //find the next ready program and stop when loop back to the current
-          {
-            r++;
-          }
-          next = r % n;
+            buttonColors[1] = 0; //reset nice button color
+            while (pcb[r % n].status != STATUS_READY && (r % n != i)) //find the next ready program and stop when loop back to the current
+            {
+              r++;
+            }
+            next = r % n;
         }
 
+        buttonColors[0] = 0; //reset Abort button color
+      refreshButtons();
       dispatch(ctx, &pcb[i], &pcb[next]);
       break;
     }
@@ -333,37 +389,36 @@ void display(int asc, int x, int y, bool inverse)
     mask = 0;
     height = 8;
     width = 8;
-  }
-
-  for (int i = height - 1; i >= 0; i--)
-  {
-    pix = font_black[asc][i];
-    if(inverse) pix = font_white[asc][i];
-    for (int j = 0; j < width; j++)
+    for (int i = height - 1; i >= 0; i--)
     {
-      bit = (pix >> j) & 1;
-      if (bit == 1){
-        fb_s[y + i][x + j] = (0x7FFF - mask);
-      } else{  
-        fb_s[y + i][x + j] = mask;
+      pix = font_black[asc][i];
+      if(inverse) pix = font_white[asc][i];
+      for (int j = 0; j < width; j++)
+      {
+        bit = (pix >> j) & 1;
+        if (bit == 1){
+          fb_s[y + i][x + j] = (0x7FFF - mask);
+        } else{  
+          fb_s[y + i][x + j] = mask;
+        }
       }
     }
-  }
-}
-
-void print_icon(uint16_t icon[16], int x, int y){
-  for (int i = 0; i < 16; i++)
-  {
+  } else {
     for (int j = 0; j < 16; j++)
     {
-      int val = (icon[i] >> (15-j)) & 0x1;
-      if (val == 1){
-        fb_s[y + i][x + j] = 0x7FFF;
-      } else {
-        fb_s[y + i][x + j] = 0;
+      pix = font_black[asc][15-j];
+      for (int i = 15; i >= 0; i--)
+      {
+        bit = (pix >> (15-i)) & 1;
+        if (bit == 1){
+          fb_s[y + (15-i)][x + (15-j)] = (0x7FFF - mask);
+        } else{  
+          fb_s[y + (15-i)][x + (15-j)] = mask;
+        }
       }
     }
   }
+
 }
 
 /*Print the cursor*/
@@ -432,7 +487,6 @@ void createTaskButton(){
   for(int i = 0; i < 30; i++){
     if(pcb[i].status == STATUS_EXECUTING || pcb[i].status == STATUS_READY && taskBarX <= 680){
       display(ctoasc('0'+pcb[i].pid), taskBarX, taskBarY, false);
-      // foreground = current->pid;
       if(pcb[i].pid == foreground){
         for(int i = taskBarX; i<= taskBarX + 16; i++){
           for(int j = 596; j <= 599; j++){
@@ -448,24 +502,13 @@ void createTaskButton(){
 void refreshTaskBar(){
   for (int i = 567; i < 600; i++)
   {
-    for(int j = 0; j < 800; j++)
+    for(int j = 0; j < 702; j++)
     {
       fb_s[i][j] = 0x7FFF;
     }
   }
-  for (int i = 0; i < 24; i++)
-  {
-    for(int j = 0; j < 800; j++)
-    {
-      fb_s[i][j] = 0x7FFF;
-    }
-  }
+
   createTaskButton();
-  print_icon(abort_button, 774, 4);
-  print_icon(plus_button, 774, 578);
-  print_icon(right_arrow, 738,578);
-  print_icon(left_arrow, 702, 578);
-  print_icon(nice_button, 10, 4);
 }
 
 void taskBarClick(){
@@ -490,6 +533,7 @@ void abortButtonClick(){
     pcb[foreground - 1].status = STATUS_TERMINATED;
     foreground = 1;
   }
+  buttonColors[0] = 0xE061;
 }
 
 void rightButtonClick(){
@@ -501,7 +545,23 @@ void leftButtonClick(){
 }
 
 void niceButtonClick(){
-  if(foreground != 1) pcb[foreground - 1].priority += 3;
+  if(foreground != 1){
+    pcb[foreground - 1].priority += 3;
+    buttonColors[1] = 0xEE45;
+  } 
+}
+
+void showButtonClick(){
+  if(showAll == true){
+    buttonColors[2] = 0;
+    reset_system_canvas();
+    typeX = 50;
+    typeY = 75;
+    showAll = false;
+  } else {
+    showAll = true;
+    buttonColors[2] = 0x06E5;
+  }
 }
 
 //Reset all the bits in the given uint
@@ -574,6 +634,7 @@ void hilevel_handler_irq(ctx_t *ctx)
       print_clicked_cursor(cursorX, cursorY);
       if(cursorY >= 568 && cursorX <= 738) taskBarClick();
       else if(cursorY <= 24 && cursorX >= 774) abortButtonClick();
+      else if(cursorY <= 24 && cursorX >= 392 && cursorX <=409) showButtonClick();
       else if(cursorY <= 24 && cursorX <= 26) niceButtonClick();
       else if(cursorY >= 568 && cursorX >= 738 && cursorX <= 754) rightButtonClick();
       else if(cursorY >= 568 && cursorX >= 702 && cursorX <= 718) rightButtonClick();
@@ -671,7 +732,10 @@ void hilevel_handler_svc(ctx_t *ctx, uint32_t id)
     pcb[pid_c - 1].status = STATUS_READY;
 
     n++;
+    reset_system_canvas();
     foreground = pid_c;
+    schedule(ctx);
+
     break;
   }
 
@@ -687,7 +751,7 @@ void hilevel_handler_svc(ctx_t *ctx, uint32_t id)
   case 0x05:
   { //SYS_EXEC
     ctx->pc = (uint32_t)(ctx->gpr[0]);
-
+    schedule(ctx);
     break;
   }
 
@@ -702,6 +766,7 @@ void hilevel_handler_svc(ctx_t *ctx, uint32_t id)
   case 0x07:
   { //SYS_NICE
     pcb[ctx->gpr[0] - 1].priority+=3;
+    schedule(ctx);
     break;
   }
 
@@ -787,7 +852,6 @@ void hilevel_handler_svc(ctx_t *ctx, uint32_t id)
     int r = current->pid;
     ctx->gpr[5] = r;
     break;
-    schedule(ctx);
   }
 
   case 0x0A:
@@ -796,7 +860,7 @@ void hilevel_handler_svc(ctx_t *ctx, uint32_t id)
     int x = ctx->gpr[1];
     int y = ctx->gpr[2];
 
-    if(current->pid == foreground){
+    if((current->pid == foreground) || showAll){
       if(x == 999 || y == 999){
       if(typeX >= 750){
         if(typeY >= 500) typeY = 75;
