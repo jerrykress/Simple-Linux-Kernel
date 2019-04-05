@@ -63,65 +63,73 @@ typedef struct
     int owner;
 } mutex;
 
+typedef struct
+{
+    int height;
+    int width;
+    int mask;
+    uint16_t table[128][16];
+} font;
+
 uint16_t font_black[128][16] = {
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},                                              // U+0000 (nul)
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},                                              // U+0001
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},                                              // U+0002
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},                                              // U+0003
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},                                              // U+0004
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},                                              // U+0005
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},                                              // U+0006
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},                                              // U+0007
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},                                              // U+0008
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},                                              // U+0009
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},                                              // U+000A
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},                                              // U+000B
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},                                              // U+000C
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},                                              // U+000D
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},                                              // U+000E
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},                                              // U+000F
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},                                              // U+0010
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},                                              // U+0011
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},                                              // U+0012
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},                                              // U+0013
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},                                              // U+0014
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},                                              // U+0015
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},                                              // U+0016
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},                                              // U+0017
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},                                              // U+0018
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},                                              // U+0019
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},                                              // U+001A
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},                                              // U+001B
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},                                              // U+001C
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},                                              // U+001D
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},                                              // U+001E
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},                                              // U+001F
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},                                              // U+0020 (space)
-    {0, 0, 448, 448, 448, 448, 448, 448, 448, 448, 0, 0, 448, 448, 0, 0},                          // U+0021 (!)
-    {0, 0, 0, 1584, 1584, 1584, 1584, 0, 0, 0, 0, 0, 0, 0, 0, 0},                                  // U+0022 (")
-    {0, 0, 1088, 1088, 1600, 1632, 4088, 544, 544, 816, 4088, 272, 272, 400, 0, 0},                // U+0023 (#)
-    {0, 128, 448, 1008, 1680, 144, 176, 224, 960, 1664, 1152, 1168, 1712, 992, 128, 0},            // U+0024 ($)
-    {0, 0, 12, 1558, 818, 306, 434, 158, 1216, 6720, 4960, 4896, 4880, 7696, 0, 0},                // U+0025 (%)
-    {0, 0, 192, 480, 816, 304, 480, 224, 240, 1432, 1800, 1800, 1816, 3568, 0, 0},                 // U+0026 (&)
-    {0, 192, 192, 192, 192, 192, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},                                    // U+0027 (')
-    {0, 128, 192, 64, 96, 96, 32, 32, 32, 32, 96, 64, 64, 192, 128, 0},                            // U+0028 (()
-    {0, 192, 128, 384, 256, 256, 768, 768, 768, 768, 256, 256, 384, 128, 192, 0},                  // U+0029 ())
-    {0, 0, 0, 0, 0, 128, 960, 384, 576, 0, 0, 0, 0, 0, 0, 0},                                      // U+002A (*)
-    {0, 0, 0, 0, 0, 128, 128, 128, 2032, 128, 128, 128, 0, 0, 0, 0},                               // U+002B (+)
-    {0, 0, 0, 0, 0, 0, 192, 192, 128, 128, 64, 0, 0, 0, 0, 0},                                     // U+002C (,)
-    {0, 0, 0, 0, 0, 0, 496, 496, 0, 0, 0, 0, 0, 0, 0, 0},                                          // U+002D (-)
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 192, 192, 0, 0, 0, 0},                                          // U+002E (.)
-    {0, 0, 128, 128, 128, 64, 64, 64, 64, 32, 32, 32, 48, 16, 0, 0},                               // U+002F (/)
-    {0, 0, 1984, 2080, 2080, 2080, 2080, 2080, 2080, 2080, 2080, 2080, 1984, 0, 0, 0},             // U+0030 (0)
-    {0, 0, 0, 384, 448, 480, 384, 384, 384, 384, 384, 384, 384, 384, 0, 0},                        // U+0031 (1)
-    {0, 0, 448, 992, 1584, 1584, 1536, 1536, 896, 448, 96, 48, 3120, 4080, 0, 0},                  // U+0032 (2)
-    {0, 0, 0, 992, 1584, 1584, 1536, 896, 896, 1536, 1536, 1584, 1584, 992, 0, 0},                 // U+0033 (3)
-    {0, 0, 0, 768, 896, 960, 832, 800, 816, 792, 4088, 768, 768, 768, 0, 0},                       // U+0034 (4)
-    {0, 0, 0, 2032, 2032, 48, 48, 1008, 2032, 1536, 1536, 1584, 1008, 480, 0, 0},                  // U+0035 (5)
-    {0, 0, 896, 1984, 3168, 96, 96, 2016, 4064, 3168, 3168, 3168, 2016, 1984, 0, 0},               // U+0036 (6)
-    {0, 0, 2032, 2032, 1536, 1792, 768, 896, 384, 448, 192, 192, 224, 96, 0, 0},                   // U+0037 (7)
-    {0, 0, 896, 1984, 3168, 3168, 3168, 1984, 2016, 3168, 3168, 3168, 3168, 1984, 0, 0},           // U+0038 (8)
-    {0, 0, 896, 1984, 3168, 3168, 3168, 3168, 4064, 4032, 3072, 3104, 4064, 1984, 0, 0},           // U+0039 (9)
+    {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF}, // U+0000 (nul)
+    {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF},                                                                                // U+0001
+    {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF},                                                                                // U+0002
+    {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF},                                                                                // U+0003
+    {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF},                                                                                // U+0004
+    {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF},                                                                                // U+0005
+    {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF},                                                                                // U+0006
+    {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF},                                                                                // U+0007
+    {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF},                                                                                // U+0008
+    {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF},                                                                                // U+0009
+    {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF},                                                                                // U+000A
+    {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF},                                                                                // U+000B
+    {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF},                                                                                // U+000C
+    {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF},                                                                                // U+000D
+    {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF},                                                                                // U+000E
+    {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF},                                                                                // U+000F
+    {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF},                                                                                // U+0010
+    {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF},                                                                                // U+0011
+    {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF},                                                                                // U+0012
+    {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF},                                                                                // U+0013
+    {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF},                                                                                // U+0014
+    {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF},                                                                                // U+0015
+    {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF},                                                                                // U+0016
+    {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF},                                                                                // U+0017
+    {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF},                                                                                // U+0018
+    {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF},                                                                                // U+0019
+    {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF},                                                                                // U+001A
+    {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF},                                                                                // U+001B
+    {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF},                                                                                // U+001C
+    {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF},                                                                                // U+001D
+    {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF},                                                                                // U+001E
+    {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF},                                                                                // U+001F
+    {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF},                                                                                // U+0020 (space)
+    {0, 0, 448, 448, 448, 448, 448, 448, 448, 448, 0, 0, 448, 448, 0, 0},                                                             // U+0021 (!)
+    {0, 0, 0, 1584, 1584, 1584, 1584, 0, 0, 0, 0, 0, 0, 0, 0, 0},                                                                     // U+0022 (")
+    {0, 0, 1088, 1088, 1600, 1632, 4088, 544, 544, 816, 4088, 272, 272, 400, 0, 0},                                                   // U+0023 (#)
+    {0, 128, 448, 1008, 1680, 144, 176, 224, 960, 1664, 1152, 1168, 1712, 992, 128, 0},                                               // U+0024 ($)
+    {0, 0, 12, 1558, 818, 306, 434, 158, 1216, 6720, 4960, 4896, 4880, 7696, 0, 0},                                                   // U+0025 (%)
+    {0, 0, 192, 480, 816, 304, 480, 224, 240, 1432, 1800, 1800, 1816, 3568, 0, 0},                                                    // U+0026 (&)
+    {0, 192, 192, 192, 192, 192, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},                                                                       // U+0027 (')
+    {0, 128, 192, 64, 96, 96, 32, 32, 32, 32, 96, 64, 64, 192, 128, 0},                                                               // U+0028 (()
+    {0, 192, 128, 384, 256, 256, 768, 768, 768, 768, 256, 256, 384, 128, 192, 0},                                                     // U+0029 ())
+    {0, 0, 0, 0, 0, 128, 960, 384, 576, 0, 0, 0, 0, 0, 0, 0},                                                                         // U+002A (*)
+    {0, 0, 0, 0, 0, 128, 128, 128, 2032, 128, 128, 128, 0, 0, 0, 0},                                                                  // U+002B (+)
+    {0, 0, 0, 0, 0, 0, 192, 192, 128, 128, 64, 0, 0, 0, 0, 0},                                                                        // U+002C (,)
+    {0, 0, 0, 0, 0, 0, 496, 496, 0, 0, 0, 0, 0, 0, 0, 0},                                                                             // U+002D (-)
+    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 192, 192, 0, 0, 0, 0},                                                                             // U+002E (.)
+    {0, 0, 128, 128, 128, 64, 64, 64, 64, 32, 32, 32, 48, 16, 0, 0},                                                                  // U+002F (/)
+    {0, 0, 1984, 2080, 2080, 2080, 2080, 2080, 2080, 2080, 2080, 2080, 1984, 0, 0, 0},                                                // U+0030 (0)
+    {0, 0, 0, 384, 448, 480, 384, 384, 384, 384, 384, 384, 384, 384, 0, 0},                                                           // U+0031 (1)
+    {0, 0, 448, 992, 1584, 1584, 1536, 1536, 896, 448, 96, 48, 3120, 4080, 0, 0},                                                     // U+0032 (2)
+    {0, 0, 0, 992, 1584, 1584, 1536, 896, 896, 1536, 1536, 1584, 1584, 992, 0, 0},                                                    // U+0033 (3)
+    {0, 0, 0, 768, 896, 960, 832, 800, 816, 792, 4088, 768, 768, 768, 0, 0},                                                          // U+0034 (4)
+    {0, 0, 0, 2032, 2032, 48, 48, 1008, 2032, 1536, 1536, 1584, 1008, 480, 0, 0},                                                     // U+0035 (5)
+    {0, 0, 896, 1984, 3168, 96, 96, 2016, 4064, 3168, 3168, 3168, 2016, 1984, 0, 0},                                                  // U+0036 (6)
+    {0, 0, 2032, 2032, 1536, 1792, 768, 896, 384, 448, 192, 192, 224, 96, 0, 0},                                                      // U+0037 (7)
+    {0, 0, 896, 1984, 3168, 3168, 3168, 1984, 2016, 3168, 3168, 3168, 3168, 1984, 0, 0},                                              // U+0038 (8)
+    {0, 0, 896, 1984, 3168, 3168, 3168, 3168, 4064, 4032, 3072, 3104, 4064, 1984, 0, 0},                                              // U+0039 (9)
 };
 
 uint16_t font_white[128][8] = {

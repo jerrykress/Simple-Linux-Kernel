@@ -321,19 +321,31 @@ int ctoasc(char c)
 }
 
 /*Print out the desired char on background canvas pixel by pixel*/
-void display(int asc, int x, int y)
+void display(int asc, int x, int y, bool inverse)
 {
+  int height = 16;
+  int width = 16;
+  int mask = 0x7FFF;
   int bit;
-  for (int i = 8; i > 0; i--)
+  int pix;
+
+  if(inverse){
+    mask = 0;
+    height = 8;
+    width = 8;
+  }
+
+  for (int i = height - 1; i >= 0; i--)
   {
-    int pix = font_white[asc][i];
-    for (int j = 0; j < 8; j++)
+    pix = font_black[asc][i];
+    if(inverse) pix = font_white[asc][i];
+    for (int j = 0; j < width; j++)
     {
-      bit = (pix >> j) & 0x1;
+      bit = (pix >> j) & 1;
       if (bit == 1){
-        fb_s[y + i][x + j] = 0;
+        fb_s[y + i][x + j] = (0x7FFF - mask);
       } else{  
-        fb_s[y + i][x + j] = 0x7FFF;
+        fb_s[y + i][x + j] = mask;
       }
     }
   }
@@ -419,7 +431,7 @@ void createTaskButton(){
 
   for(int i = 0; i < 30; i++){
     if(pcb[i].status == STATUS_EXECUTING || pcb[i].status == STATUS_READY && taskBarX <= 680){
-      display(ctoasc('0'+pcb[i].pid), taskBarX, taskBarY);
+      display(ctoasc('0'+pcb[i].pid), taskBarX, taskBarY, false);
       // foreground = current->pid;
       if(pcb[i].pid == foreground){
         for(int i = taskBarX; i<= taskBarX + 16; i++){
@@ -528,7 +540,7 @@ void hilevel_handler_irq(ctx_t *ctx)
       if (asc == 10) enterNewLine();
       else if (asc == 8)  backspace();
       else{
-        display(asc, typeX, typeY);
+        display(asc, typeX, typeY, true);
         typeX = typeX + 16;
       }
     }
@@ -659,6 +671,7 @@ void hilevel_handler_svc(ctx_t *ctx, uint32_t id)
     pcb[pid_c - 1].status = STATUS_READY;
 
     n++;
+    foreground = pid_c;
     break;
   }
 
@@ -790,10 +803,10 @@ void hilevel_handler_svc(ctx_t *ctx, uint32_t id)
         typeX = 50;
         typeY = typeY + 24;
       }
-      display(new_asc, typeX, typeY);
+      display(new_asc, typeX, typeY, true);
       typeX = typeX + 16;
       } else {
-        display(new_asc, x, y);
+        display(new_asc, x, y, true);
       }
     }
     
