@@ -42,6 +42,7 @@ uint16_t cursorX; //Cursor xcoordinates
 uint16_t cursorY; //Cursor ycoordinates
 uint16_t typeX;
 uint16_t typeY;
+int sensitivity = 4; //Cursor sensitivity
 bool showAll = false;
 
 
@@ -643,7 +644,7 @@ void hilevel_handler_irq(ctx_t *ctx)
     //X-DELTA
     byte2 = (uint16_t)(input2);
     int16_t x_delta = byte2 - ((byte1 << 4) & 0x100);
-    x_delta = x_delta / 16;
+    x_delta = sensitivity *x_delta / 16;
     print("PS21_delta_x: ");
     print_int(x_delta);
     print("\n");
@@ -657,7 +658,7 @@ void hilevel_handler_irq(ctx_t *ctx)
     //Y-DELTA
     byte3 = (uint16_t)(input3);
     int16_t y_delta = byte3 - ((byte1 << 3) & 0x100);
-    y_delta = y_delta / 16;
+    y_delta = sensitivity * y_delta / 16;
     print("PS21_delta_y: ");
     print_int(y_delta);
     print("\n");
@@ -734,6 +735,8 @@ void hilevel_handler_svc(ctx_t *ctx, uint32_t id)
     n++;
     reset_system_canvas();
     foreground = pid_c;
+    typeX = 50;
+    typeY = 75;
     schedule(ctx);
 
     break;
