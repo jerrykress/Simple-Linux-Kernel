@@ -1,5 +1,8 @@
 # Simple-Linux-Kernel
 
+**Note on license: This project started as a part of the Concurrent Programming (COMS20001) course at University of Bristol. The original skeleton code included the structure of the project, hence the licensing in many files. My implementation included all hilevel and lolevel files under /system/kernel/ which were layed out by lecturer Daniel Page.**
+
+
 Customised linux kernel with support for concurrent program execution using context switching and pid priority queue.
 Customidsd basic GUI support that displays print messages from the executed C programs.
 Basic I/O support such as mouse cursor and keyboard input.
